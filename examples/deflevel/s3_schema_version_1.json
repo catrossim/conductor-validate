@@ -1,0 +1,15 @@
+{
+  "name": "deflevel_s3_schema_version_1",
+  "description": "定义级 S3：schemaVersion 必须恰好是 2（当前服务端 @Min(2) @Max(2)）",
+  "version": 1,
+  "schemaVersion": 1,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "noop",
+      "taskReferenceName": "noop_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "name": "order_pipeline",
+  "description": "示例：一个能被服务端接受、且不触发任何 CRITICAL/WARN 的工作流",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["order_id", "tier"],
+  "outputParameters": {
+    "receipt": "${receipt_ref.output.body}",
+    "label": "${route_ref.output.case}"
+  },
+  "tasks": [
+    {
+      "name": "load_order",
+      "taskReferenceName": "load_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "order_id": "${workflow.input.order_id}"
+      },
+      "outputParameters": {
+        "amount": "${load_ref.output.amount}"
+      }
+    },
+    {
+      "name": "route_by_tier",
+      "taskReferenceName": "route_ref",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "tier",
+      "inputParameters": {
+        "tier": "${workflow.input.tier}"
+      },
+      "decisionCases": {
+        "vip": [
+          {
+            "name": "vip_reserve",
+            "taskReferenceName": "vip_ref",
+            "type": "SIMPLE",
+            "inputParameters": {
+              "order_id": "${load_ref.output.order_id}"
+            }
+          }
+        ],
+        "standard": [
+          {
+            "name": "standard_reserve",
+            "taskReferenceName": "std_ref",
+            "type": "SIMPLE",
+            "inputParameters": {
+              "order_id": "${load_ref.output.order_id}"
+            }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "manual_review",
+          "taskReferenceName": "manual_ref",
+          "type": "SIMPLE"
+        }
+      ]
+    },
+    {
+      "name": "fanout_notifications",
+      "taskReferenceName": "fanout_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "email_customer",
+            "taskReferenceName": "email_ref",
+            "type": "SIMPLE"
+          }
+        ],
+        [
+          {
+            "name": "audit_log",
+            "taskReferenceName": "audit_ref",
+            "type": "SIMPLE"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "gather_notifications",
+      "taskReferenceName": "gather_ref",
+      "type": "JOIN",
+      "joinOn": ["email_ref", "audit_ref"]
+    },
+    {
+      "name": "receipt",
+      "taskReferenceName": "receipt_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "body": "${workflow.input.order_id}"
+      }
+    }
+  ]
+}

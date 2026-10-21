@@ -1,0 +1,82 @@
+{
+  "name": "demo_flow",
+  "description": "用于验证 lint_workflow.py 的样例（故意包含多处问题）",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "ops@example.com",
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "load",
+      "taskReferenceName": "load_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "id": "${workflow.input.orderId}" }
+    },
+    {
+      "name": "route",
+      "taskReferenceName": "route_ref",
+      "type": "SWITCH",
+      "evaluatorType": "javascript",
+      "expression": "$.workflow.input.orderId != null ? 'vip' : 'normal'",
+      "decisionCases": {
+        "vip": [
+          {
+            "name": "vip_call",
+            "taskReferenceName": "vip_ref",
+            "type": "SIMPLE",
+            "inputParameters": { "body": "${load_ref.output.payload}" }
+          }
+        ],
+        "normal": [
+          {
+            "name": "std_call",
+            "taskReferenceName": "std_ref",
+            "type": "SIMPLE",
+            "inputParameters": { "body": "${std_missing.output.payload}" }
+          }
+        ]
+      }
+    },
+    {
+      "name": "fanout",
+      "taskReferenceName": "fan_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "branch_a",
+            "taskReferenceName": "a_ref",
+            "type": "SIMPLE",
+            "inputParameters": {}
+          }
+        ],
+        [
+          {
+            "name": "branch_b",
+            "taskReferenceName": "b_ref",
+            "type": "SIMPLE",
+            "inputParameters": {}
+          }
+        ]
+      ]
+    },
+    {
+      "name": "gather",
+      "taskReferenceName": "gather_ref",
+      "type": "JOIN",
+      "joinOn": ["a_ref"]
+    },
+    {
+      "name": "end",
+      "taskReferenceName": "end_ref",
+      "type": "TERMINATE",
+      "inputParameters": { "status": "COMPLETED" }
+    },
+    {
+      "name": "never_runs",
+      "taskReferenceName": "dead_ref",
+      "type": "SIMPLE",
+      "inputParameters": {}
+    }
+  ]
+}

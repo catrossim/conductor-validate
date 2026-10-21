@@ -1,0 +1,14 @@
+{
+  "description": "定义级 S4：工作流 name 不能为空（server WorkflowDef.name @NotEmpty）",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "noop",
+      "taskReferenceName": "noop_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    }
+  ]
+}

@@ -1,0 +1,504 @@
+{
+  "name": "manual_validate_playground",
+  "description": "人工验证 conductor-validate 用：每个任务/分支都刻意写错一处，任务名以 case_<规则ID>_<现象> 标注预期命中的规则。定义级规则（schemaVersion/name/tasks）另见同级 *_deflevel.json。",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "ops@example.com",
+  "inputParameters": ["orderId", "tier"],
+  "outputParameters": {
+    "amount": "${load_ref.output.amount}",
+    "ghost": "${not_exist_ref.output.x}"
+  },
+  "tasks": [
+    {
+      "name": "load_order",
+      "taskReferenceName": "load_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "orderId": "${workflow.input.orderId}" },
+      "taskDefinition": {
+        "name": "load_order",
+        "retryCount": 3,
+        "timeoutSeconds": 30,
+        "inputTemplate": { "orderId": "${workflow.input.orderId}" },
+        "outputTemplate": { "amount": 0 }
+      }
+    },
+    {
+      "name": "case_d1_empty_placeholder",
+      "taskReferenceName": "d1_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "x": "${}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_w13_dangling_ref",
+      "taskReferenceName": "w13_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "x": "${ghost_ref.output.payload}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_d2_bad_scope",
+      "taskReferenceName": "d2_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "x": "${workflow.unknownScope}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_d4_bad_field",
+      "taskReferenceName": "d4_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "x": "${load_ref.notAField}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_d7_env_unknown",
+      "taskReferenceName": "d7_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "x": "${workflow.env.NOT_DEFINED_ENV}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_w14_manual_inline",
+      "taskReferenceName": "w14_ref",
+      "type": "SIMPLE",
+      "inputParameters": { "load_ref": "${load_ref.output.amount}" },
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_g_simple_no_taskdef",
+      "taskReferenceName": "simple_nodef_ref",
+      "type": "SIMPLE",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_switch_missing_all",
+      "taskReferenceName": "sw_missing_ref",
+      "type": "SWITCH"
+    },
+    {
+      "name": "case_g_switch_valueparam_bad_key",
+      "taskReferenceName": "sw_badkey_ref",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "tier",
+      "inputParameters": { "other": "x" },
+      "decisionCases": {
+        "vip": [
+          {
+            "name": "sw_badkey_vip",
+            "taskReferenceName": "sw_badkey_vip_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "sw_badkey_default",
+          "taskReferenceName": "sw_badkey_default_ref",
+          "type": "SIMPLE",
+          "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+        }
+      ]
+    },
+    {
+      "name": "case_g_switch_js_dollar_workflow",
+      "taskReferenceName": "sw_js_ref",
+      "type": "SWITCH",
+      "evaluatorType": "javascript",
+      "expression": "$.workflow.input.tier === 'vip' ? 'vip' : 'normal'",
+      "decisionCases": {
+        "vip": [
+          {
+            "name": "sw_js_vip",
+            "taskReferenceName": "sw_js_vip_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "sw_js_default",
+          "taskReferenceName": "sw_js_default_ref",
+          "type": "SIMPLE",
+          "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+        }
+      ]
+    },
+    {
+      "name": "case_g_decision_deprecated",
+      "taskReferenceName": "decision_ref",
+      "type": "DECISION",
+      "caseValueParam": "tier",
+      "decisionCases": {
+        "vip": [
+          {
+            "name": "decision_vip",
+            "taskReferenceName": "decision_vip_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      }
+    },
+    {
+      "name": "case_g_dowhile_no_guard",
+      "taskReferenceName": "dowhile_ok_ref",
+      "type": "DO_WHILE",
+      "loopCondition": "$.loopCount < 3",
+      "loopOver": [
+        {
+          "name": "dowhile_body",
+          "taskReferenceName": "dowhile_body_ref",
+          "type": "SIMPLE",
+          "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+        }
+      ]
+    },
+    {
+      "name": "case_d8_placeholder_in_js",
+      "taskReferenceName": "d8_ref",
+      "type": "DO_WHILE",
+      "loopCondition": "$.loopCount < ${workflow.input.limit}",
+      "loopOver": [
+        {
+          "name": "d8_body",
+          "taskReferenceName": "d8_body_ref",
+          "type": "SIMPLE",
+          "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+        }
+      ]
+    },
+    {
+      "name": "case_g_dowhile_missing_condition",
+      "taskReferenceName": "dowhile_missing_ref",
+      "type": "DO_WHILE",
+      "loopOver": [
+        {
+          "name": "dowhile_missing_body",
+          "taskReferenceName": "dowhile_missing_body_ref",
+          "type": "SIMPLE",
+          "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+        }
+      ]
+    },
+    {
+      "name": "case_g_wait_iso_duration",
+      "taskReferenceName": "wait_iso_ref",
+      "type": "WAIT",
+      "inputParameters": { "duration": "PT10S" }
+    },
+    {
+      "name": "case_g_wait_both_duration_until",
+      "taskReferenceName": "wait_both_ref",
+      "type": "WAIT",
+      "inputParameters": { "duration": "10 seconds", "until": "2030-01-01" }
+    },
+    {
+      "name": "case_g_wait_neither",
+      "taskReferenceName": "wait_neither_ref",
+      "type": "WAIT",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_wait_iso_until",
+      "taskReferenceName": "wait_until_ref",
+      "type": "WAIT",
+      "inputParameters": { "until": "2030-01-01T00:00:00Z" }
+    },
+    {
+      "name": "case_g_http_missing_request",
+      "taskReferenceName": "http_ref",
+      "type": "HTTP",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_kafka_missing_request",
+      "taskReferenceName": "kafka_ref",
+      "type": "KAFKA_PUBLISH",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_jq_missing_expression",
+      "taskReferenceName": "jq_ref",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_dynamic_missing_param",
+      "taskReferenceName": "dyn_missing_ref",
+      "type": "DYNAMIC",
+      "inputParameters": { "taskName": "some_task" }
+    },
+    {
+      "name": "case_g_dynamic_param_not_in_input",
+      "taskReferenceName": "dyn_notin_ref",
+      "type": "DYNAMIC",
+      "dynamicTaskNameParam": "taskName",
+      "inputParameters": { "other": "x" }
+    },
+    {
+      "name": "case_g_startworkflow_missing",
+      "taskReferenceName": "startwf_ref",
+      "type": "START_WORKFLOW",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_subworkflow_missing",
+      "taskReferenceName": "subwf_ref",
+      "type": "SUB_WORKFLOW",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_event_missing_sink",
+      "taskReferenceName": "event_ref",
+      "type": "EVENT",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_forkdyn_missing",
+      "taskReferenceName": "forkdyn_missing_ref",
+      "type": "FORK_JOIN_DYNAMIC",
+      "inputParameters": {}
+    },
+    {
+      "name": "case_g_forkdyn_mutually_exclusive",
+      "taskReferenceName": "forkdyn_excl_ref",
+      "type": "FORK_JOIN_DYNAMIC",
+      "dynamicForkJoinTasksParam": "dynamicTasks",
+      "inputParameters": {
+        "forkTaskInputs": [
+          { "task": "some_task", "input": { "x": 1 } }
+        ]
+      }
+    },
+    {
+      "name": "case_g_exclusive_join_missing",
+      "taskReferenceName": "excl_ref",
+      "type": "EXCLUSIVE_JOIN"
+    },
+    {
+      "name": "case_w4_fork",
+      "taskReferenceName": "w4_fork_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "w5_nested_fork_ok",
+            "taskReferenceName": "n_ok_fork_ref",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "n_ok_branch",
+                  "taskReferenceName": "n_ok_a_ref",
+                  "type": "SIMPLE",
+                  "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+                }
+              ]
+            ]
+          },
+          {
+            "name": "w5_nested_join_ok",
+            "taskReferenceName": "n_ok_join_ref",
+            "type": "JOIN",
+            "joinOn": ["n_ok_a_ref"]
+          },
+          {
+            "name": "w4_branch_a",
+            "taskReferenceName": "a_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ],
+        [
+          {
+            "name": "w5_nested_fork_bad",
+            "taskReferenceName": "n_bad_fork_ref",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "n_bad_branch",
+                  "taskReferenceName": "n_bad_a_ref",
+                  "type": "SIMPLE",
+                  "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+                }
+              ]
+            ]
+          },
+          {
+            "name": "w5_nested_join_not_next",
+            "taskReferenceName": "n_bad_next_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          },
+          {
+            "name": "w4_branch_b",
+            "taskReferenceName": "b_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ],
+        [
+          {
+            "name": "w4_branch_c",
+            "taskReferenceName": "c_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "case_w4_join_missing_branch",
+      "taskReferenceName": "w4_join_ref",
+      "type": "JOIN",
+      "joinOn": ["a_ref", "b_ref"]
+    },
+    {
+      "name": "case_w3_fork_not_followed_by_join",
+      "taskReferenceName": "w3_fork_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "w3_branch_a",
+            "taskReferenceName": "w3_a_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ],
+        [
+          {
+            "name": "w3_branch_b",
+            "taskReferenceName": "w3_b_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "case_w3_not_a_join",
+      "taskReferenceName": "w3_next_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_w12_fork",
+      "taskReferenceName": "w12_fork_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "w12_branch_a",
+            "taskReferenceName": "w12_a_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "case_w12_join_first",
+      "taskReferenceName": "w12_join1_ref",
+      "type": "JOIN",
+      "joinOn": ["w12_a_ref"]
+    },
+    {
+      "name": "case_w12_join_second",
+      "taskReferenceName": "w12_join2_ref",
+      "type": "JOIN",
+      "joinOn": ["w12_a_ref"]
+    },
+    {
+      "name": "case_g_terminate_switch",
+      "taskReferenceName": "term_switch_ref",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "tier",
+      "inputParameters": { "tier": "${workflow.input.tier}" },
+      "decisionCases": {
+        "bad_status": [
+          {
+            "name": "case_g_terminate_bad_status",
+            "taskReferenceName": "term_bad_ref",
+            "type": "TERMINATE",
+            "inputParameters": { "status": "COMPLETED" }
+          },
+          {
+            "name": "case_nested_switch",
+            "taskReferenceName": "nested_switch_ref",
+            "type": "SWITCH",
+            "evaluatorType": "value-param",
+            "expression": "tier",
+            "inputParameters": { "tier": "${workflow.input.tier}" },
+            "decisionCases": {
+              "inner": [
+                {
+                  "name": "nested_inner",
+                  "taskReferenceName": "nested_inner_ref",
+                  "type": "SIMPLE",
+                  "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+                }
+              ]
+            },
+            "defaultCase": [
+              {
+                "name": "nested_default",
+                "taskReferenceName": "nested_default_ref",
+                "type": "SIMPLE",
+                "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+              }
+            ]
+          },
+          {
+            "name": "case_after_terminate",
+            "taskReferenceName": "after_term_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "case_g_terminate_optional",
+          "taskReferenceName": "term_opt_ref",
+          "type": "TERMINATE",
+          "optional": true,
+          "inputParameters": { "terminationStatus": "COMPLETED" }
+        }
+      ]
+    },
+    {
+      "name": "case_after_terminate",
+      "taskReferenceName": "after_terminate_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_w2_duplicate_ref",
+      "taskReferenceName": "load_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    },
+    {
+      "name": "case_w3_fork_no_join_at_all",
+      "taskReferenceName": "w3_tail_fork_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "w3_tail_branch_a",
+            "taskReferenceName": "w3_tail_a_ref",
+            "type": "SIMPLE",
+            "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+          }
+        ]
+      ]
+    }
+  ]
+}

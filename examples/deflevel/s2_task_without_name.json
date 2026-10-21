@@ -1,0 +1,14 @@
+{
+  "name": "deflevel_s2_task_without_name",
+  "description": "定义级 S2：每个任务都要有 name（server WorkflowTask.name @NotEmpty）",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "taskReferenceName": "unnamed_ref",
+      "type": "SIMPLE",
+      "taskDefinition": { "name": "noop", "inputTemplate": {}, "outputTemplate": {} }
+    }
+  ]
+}

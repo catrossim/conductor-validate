@@ -1,0 +1,8 @@
+{
+  "name": "deflevel_s1_empty_tasks",
+  "description": "定义级 S1：tasks 不能为空（server WorkflowDef.tasks @NotEmpty）",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": []
+}
