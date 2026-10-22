@@ -136,6 +136,43 @@ const config = ServerConfig.fromEnv({ baseUrl: "http://localhost:8080/api" });
 const errors = await validateDefinition(workflow, config);
 ```
 
+## Workflow viewer (visualizer + validation in the browser)
+
+`viewer/` is a **standalone** single-page app that ships with this project: it draws
+a workflow definition as a DAG, shows every property of every task, and runs the
+same rules as the CLI **in the browser** — no server, no network.
+
+```bash
+npm install          # once, for the linter build
+npm run viewer       # → http://127.0.0.1:5173/viewer/
+```
+
+- **Graph** — drag the canvas to pan, wheel to zoom, `适` to fit; click a task to
+  inspect it.
+- **属性 tab** — every field of the selected task (objects/arrays expand to JSON),
+  plus its path in the definition (`tasks[1].decisionCases.vip[0]`).
+- **校验 tab** — runs the linter and lists every finding: severity, rule id,
+  location, message and fix suggestion. `定位到节点` pans the graph to the offending
+  task and highlights it; clicking a rule id opens its entry in the rule manual.
+- **规则 tab** — the whole rule catalogue (69 rules) with a search box.
+
+The viewer is deliberately independent of the npm package: it is not part of
+`tsconfig.build.json`, it is not published, and it only consumes the linter core
+(`src/core.ts`, pure and I/O-free) compiled to browser ESM by
+`npm run build:viewer` into `viewer/vendor/` (git-ignored, rebuilt by `view.sh`).
+
+**The page runs the same rules as the CLI** — not a re-implementation. The
+browser bundle is compiled from `src/core.ts`, so rules, severities, structural
+paths (`tasks[1].decisionCases.vip[0]`) and "which task does this finding
+belong to" all come from conductor-validate. `tests/viewer-parity.test.ts`
+asserts this on every `npm test`:
+
+- the paths the viewer displays are byte-identical to the linter's canonical paths;
+- every finding resolves to a viewer node through `Linter#nodeForPath()`;
+- `viewer/vendor/core.js` behaves exactly like `src/core.ts`;
+- `viewer/*.js` may not contain hard-coded rule ids or its own severity table —
+  a new rule has to be added in `src/core.ts`.
+
 ## Development
 
 ```bash
@@ -162,6 +199,7 @@ src/
 docs/         rule manual + server-behaviour notes
 examples/     a clean workflow and one with known problems
 tests/        vitest suite
+viewer/       standalone browser viewer (DAG + in-browser validation)
 ```
 
 ## License

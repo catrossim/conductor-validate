@@ -35,11 +35,16 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:viewer": "tsc -p tsconfig.viewer.json",
+    "dev:viewer": "tsc -p tsconfig.viewer.json --watch",
     "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli.js', 0o755)\"",
+    "viewer": "./viewer/view.sh",
     "clean": "rm -rf dist",
     "dev": "tsx src/cli.ts",
+    "pretest": "npm run build:viewer",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:viewer": "vitest run tests/viewer-parity.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepublishOnly": "npm run clean && npm run build"
   },
