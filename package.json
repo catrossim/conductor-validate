@@ -14,6 +14,17 @@
   "engines": {
     "node": ">=18"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/catrossim/conductor-validate.git"
+  },
+  "homepage": "https://github.com/catrossim/conductor-validate#readme",
+  "bugs": {
+    "url": "https://github.com/catrossim/conductor-validate/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "conductor-validate": "dist/cli.js"
   },
