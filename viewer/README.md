@@ -10,34 +10,97 @@ npm run viewer         # 等价于 ./viewer/view.sh
 
 ./viewer/view.sh                          # 打开空界面，拖入自己的 JSON
 ./viewer/view.sh path/to/workflow.json    # 启动并直接加载
-PORT=8080 ./viewer/view.sh                # 换端口
+PORT=8080 ./viewer/view.sh                # 换端口（默认 5173）
 ```
 
 服务地址：<http://127.0.0.1:5173/viewer/>
 
+| 要求 | 说明 |
+| --- | --- |
+| Node 18+ | 只在**构建校验内核**时需要；打开页面本身不需要 Node |
+| `python3` | `view.sh` 用它起静态服务（换成任何静态服务器也行） |
+| 能访问 `esm.sh` | 页面里的 React / htm / orkes-workflow-visualizer 走 CDN，**首次打开需要联网** |
+
 > `view.sh` 以 **conductor-validate 项目根目录** 为站点根，所以 `/viewer/` 和
 > `/examples/` 都能访问到（示例里的 `workflow_with_issues.json` 就是在页面上
 > 直接点「issues-demo」加载的）。用 `127.0.0.1` 而不是 `localhost`，避免本机代理。
+>
+> `viewer/vendor/` 是 gitignore 的构建产物。`view.sh` 启动时发现它缺失、或它比
+> `src/core.ts` 旧，会自动重建——所以**新克隆的仓库第一次必须先 `npm install`**。
 
-## 功能
+## 界面导览
+
+页面分四块：
 
 | 区域 | 说明 |
 | --- | --- |
-| 画布 | 拖拽平移、滚轮以指针为锚点缩放、`适` 按钮适应视图并重置平移 |
-| 左侧任务列表 | 点任务即选中；带问题的任务会显示问题数徽标（颜色=最高严重级别） |
-| **属性** 标签 | 选中任务的**全部字段**（对象/数组可展开成 JSON）、在定义中的路径、该节点命中的问题、复制节点 JSON |
-| **校验** 标签 | 跑一遍 conductor-validate，按严重级别过滤，每条问题给出规则号、位置、说明、修复建议；`定位到节点` 把画布平移到出问题的任务并高亮 |
-| **规则** 标签 | 全部 69 条规则的说明，可搜索；带命中的规则会标出次数 |
+| 顶部工具栏 | 工作流名 · 版本 · 任务数；`✔ 校验`（带问题数徽标）、`规则`、`Mermaid`、`SVG`、`PNG`、`JSON` |
+| 左侧任务列表 | 点任务即选中；带问题的任务显示问题数徽标（颜色=最高严重级别）；底部「换一个工作流」 |
+| 中间画布 | 拖拽平移、滚轮以指针为锚点缩放、`−` / `+` / `适` 按钮、缩放百分比、`原始 JSON` 开关；顶部状态药丸显示节点数、边数、子工作流、校验结论 |
+| 右侧检查面板 | 三个标签页：**属性** / **校验** / **规则**，可关闭 |
 
-未加载工作流时会自动做一次**静默校验**（结果体现在任务列表徽标和顶部状态药丸上），
+### 三个标签页
+
+| 标签 | 说明 |
+| --- | --- |
+| **属性** | 选中任务的**全部字段**（对象/数组可展开成 JSON）、在定义中的路径、该节点命中的问题、`复制节点 JSON`；没选中任务时显示工作流级属性 |
+| **校验** | 跑一遍 conductor-validate，按严重级别过滤，每条问题给出规则号、位置、说明、修复建议；`定位到节点` 把画布平移到出问题的任务并高亮 |
+| **规则** | 全部 69 条规则的说明，可搜索（规则号 / 说明 / 级别）；带命中的规则会标出次数 |
+
+加载工作流后会自动做一次**静默校验**（结果体现在左侧任务列表的徽标和顶部状态药丸上），
 点顶部 `✔ 校验` 会打开校验结果面板。
+
+### 把工作流喂进去（4 种方式）
+
+| 方式 | 怎么做 |
+| --- | --- |
+| 命令行直接加载 | `./viewer/view.sh path/to/workflow.json`（文件会被复制成 `viewer/_user-workflow.json`，脚本退出时删除） |
+| 拖文件 | 把 `.json` 拖到页面**任意位置**（左侧上传区也可以） |
+| 粘贴 JSON | 左侧「粘贴 JSON 文本」→ `解析`；支持 `{ "workflowDef": { ... } }` 这类包裹形式 |
+| 点示例 | 左侧示例 chip：`fork-join`、`do-while-loop`、`llm-chaining`、`weather-notification`、`agent-fork-specialists`、`issues-demo`（故意有问题）、`valid-demo`（合法） |
+
+页面只要求 JSON 里有 `tasks` 数组，其余字段缺失不影响画图。
+
+### 导出
+
+| 按钮 | 产出 | 备注 |
+| --- | --- | --- |
+| `Mermaid` | `<name>.mermaid.md` | 流程图文本，同时尝试复制到剪贴板（浏览器策略禁用时只下载） |
+| `SVG` | `<name>.svg` | 把 `<style>` 内联进 SVG，单独打开即可看 |
+| `PNG` | `<name>.png` | 2 倍像素比导出当前画布 |
+| `JSON` | `<name>.json` | 当前加载的定义，格式化输出（`JSON.stringify(wf, null, 2)`） |
+
+文件名取工作流的 `name` 字段，没有就退化成 `workflow`。
+
+### 典型用法
+
+1. **定位结构问题**：加载定义 → 左侧任务列表看哪个任务带徽标 → `✔ 校验` → 点 `定位到节点` → 在 `属性` 标签里核对/改字段。
+2. **给 PR 附流程图**：`Mermaid` 导出后贴进 PR 描述（GitHub 原生渲染 mermaid）。
+3. **评审别人的定义**：拖 JSON 进去 → `规则` 标签对照规则说明 → 用 `原始 JSON` 开关核对字段。
+
+### 页面不做的两件事
+
+- **在线 server 校验**：页面只有离线规则（`src/core.ts`）。要问服务端自己的结论，仍需用 CLI：`conductor-validate server workflow.json --server http://localhost:8080/api`。
+- **判断运行时行为**：它检查的是定义结构，不是工作流跑起来会怎样。
+
+### 故障排查
+
+| 现象 | 原因 / 处理 |
+| --- | --- |
+| `Address already in use` | 端口被占：`PORT=8080 ./viewer/view.sh` |
+| `需要 python3 来提供静态服务` | 没装 python3；自己起静态服务器也行：`npx serve .`，然后打开 `/viewer/` |
+| 页面空白、控制台报 `esm.sh` 加载失败 | CDN 不可达（离线环境）：需要能访问 esm.sh，或把 CDN 依赖换成本地副本 |
+| 页面规则和 CLI 对不上 | 改了 `src/core.ts` 但没重编译：另开终端 `npm run dev:viewer`，或重启 `view.sh`（会自动重建过期产物） |
+| 打开的是旧页面 | 浏览器缓存了 `viewer/vendor/*.js`：强制刷新（Cmd/Ctrl+Shift+R） |
+| `npm install` 装不上 | 只需要 devDependencies（typescript / vitest / tsx）；只想构建内核的话 `npx -y tsc -p tsconfig.viewer.json` 就够 |
+| 拖拽没反应 | 确认是 `.json` 文件；一次只认第一个文件 |
 
 ## 目录
 
 ```
 viewer/
   index.html      importmap（react / htm / orkes-workflow-visualizer 走 CDN）+ 入口
-  app.js          视图、缩放平移、属性面板、校验面板
+  app.js          视图、缩放平移、属性/校验/规则面板、导出
   graph.js        把 workflow 定义解析成 DAG（边是它算的，路径不是）
   mermaid.js      workflow → mermaid
   styles.css

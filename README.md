@@ -140,11 +140,15 @@ const errors = await validateDefinition(workflow, config);
 
 `viewer/` is a **standalone** single-page app that ships with this project: it draws
 a workflow definition as a DAG, shows every property of every task, and runs the
-same rules as the CLI **in the browser** — no server, no network.
+same rules as the CLI **in the browser** — no backend, no build step at runtime
+(the page's UI dependencies come from a CDN, so the first load needs network).
 
 ```bash
 npm install          # once, for the linter build
 npm run viewer       # → http://127.0.0.1:5173/viewer/
+
+./viewer/view.sh path/to/workflow.json   # open and load a definition directly
+PORT=8080 ./viewer/view.sh               # different port (default 5173)
 ```
 
 - **Graph** — drag the canvas to pan, wheel to zoom, `适` to fit; click a task to
@@ -155,6 +159,18 @@ npm run viewer       # → http://127.0.0.1:5173/viewer/
   location, message and fix suggestion. `定位到节点` pans the graph to the offending
   task and highlights it; clicking a rule id opens its entry in the rule manual.
 - **规则 tab** — the whole rule catalogue (69 rules) with a search box.
+
+**Loading a definition** — drop the JSON anywhere on the page, paste JSON text,
+click one of the built-in samples (`issues-demo` is a broken one, `valid-demo` a
+clean one), or hand the file to `view.sh` on the command line.
+
+**Exporting** — `PNG` / `SVG` of the drawing, `Mermaid` of the flow (also copied
+to the clipboard), and `JSON` of the definition.
+
+Full guide, including troubleshooting: **[viewer/README.md](viewer/README.md)**.
+
+Note that the page runs the **offline** rules only — asking a live server for its
+own verdict stays a CLI feature (`conductor-validate server ...`).
 
 The viewer is deliberately independent of the npm package: it is not part of
 `tsconfig.build.json`, it is not published, and it only consumes the linter core
